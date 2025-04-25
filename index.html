@@ -36,6 +36,29 @@
     connectBtn.addEventListener('click', async () => {
       try {
         const instance = await web3Modal.connect();
+        // Force switch to BNB Chain if not already
+        if (window.ethereum && window.ethereum.request) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x38' }] // 0x38 = 56 in hex (BNB Chain Mainnet)
+            });
+          } catch (switchError) {
+            // If the chain is not added to MetaMask, add it
+            if (switchError.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x38',
+                  chainName: 'BNB Smart Chain',
+                  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                  rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                  blockExplorerUrls: ['https://bscscan.com']
+                }]
+              });
+            }
+          }
+        }
         const provider = new ethers.BrowserProvider(instance);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
