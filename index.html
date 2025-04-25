@@ -1,72 +1,54 @@
- <!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>WalletConnect Test</title>
-  <script src="https://unpkg.com/@walletconnect/web3modal@2.6.2/dist/index.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 80px;
-    }
-    button {
-      padding: 12px 24px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    #status {
-      margin-top: 20px;
-      padding: 10px;
-      font-size: 16px;
-    }
-  </style>
+  <title>Connect Wallet</title>
 </head>
-<body>
+<body style="background:#111; color:#fff; font-family:sans-serif; text-align:center; padding:2rem;">
+  <h1>Connect Wallet</h1>
+  <button id="connectBtn">Connect</button>
+  <p id="walletAddress"></p>
 
-  <h1>Connect Your Wallet</h1>
-  <button id="connectBtn">Connect Wallet</button>
-  <div id="status">🔴 Not Connected</div>
-
+  <!-- WalletConnect Provider for Web3Modal v1 -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+  <!-- Web3Modal v1 UMD bundle -->
+  <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+  <!-- ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.1/dist/ethers.umd.min.js"></script>
   <script>
-    const projectId = "ff2db6544a529027450c74a34fc4fb74"; // your WalletConnect Project ID
+    const connectBtn = document.getElementById('connectBtn');
+    const walletAddress = document.getElementById('walletAddress');
 
-    const { Web3Modal } = window.WalletConnectWeb3Modal;
+    const providerOptions = {
+      walletconnect: {
+        package: window.WalletConnectProvider.default || window.WalletConnectProvider,
+        options: {
+          rpc: { 56: "https://bsc-dataseed.binance.org/" },
+          chainId: 56
+        }
+      }
+    };
 
-    const web3Modal = new Web3Modal({
-      projectId,
-      walletConnectVersion: 2,
-      defaultChain: {
-        id: 56, // BSC Mainnet
-        rpcUrl: "https://bsc-dataseed.binance.org/"
-      },
-      themeMode: "light"
+    const web3Modal = new window.Web3Modal.default({
+      cacheProvider: false,
+      providerOptions
     });
 
-    const connectBtn = document.getElementById("connectBtn");
-    const status = document.getElementById("status");
-
-    connectBtn.addEventListener("click", async () => {
+    connectBtn.addEventListener('click', async () => {
       try {
-        const provider = await web3Modal.connect();
-        const ethersProvider = new ethers.BrowserProvider(provider);
-        const signer = await ethersProvider.getSigner();
+        const instance = await web3Modal.connect();
+        const provider = new ethers.BrowserProvider(instance);
+        const signer = await provider.getSigner();
         const address = await signer.getAddress();
-
-        status.textContent = `✅ Connected: ${address.slice(0, 6)}...${address.slice(-4)}`;
-        status.style.color = "green";
+        walletAddress.textContent = `Connected: ${address}`;
       } catch (err) {
-        console.error(err);
-        status.textContent = `❌ Error: ${err.message}`;
-        status.style.color = "red";
+        if (err && err.message && err.message.includes("Modal closed by user")) {
+          walletAddress.textContent = "Wallet connection cancelled.";
+        } else {
+          walletAddress.textContent = "❌ Failed to connect";
+        }
+        console.error("Connection error:", err);
       }
     });
   </script>
-
 </body>
 </html>
